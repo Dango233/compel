@@ -241,7 +241,7 @@ class EmbeddingsProvider:
         token_ids = torch.tensor(token_ids, dtype=torch.long).to(device)
 
         text_encoder_output = self.text_encoder(token_ids, attention_mask, return_dict=True)
-        pooled = text_encoder_output.text_embeds
+        pooled = text_encoder_output.pooler_output
 
         return pooled
 
