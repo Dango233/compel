@@ -461,8 +461,8 @@ def build_parser_syntax(attention_plus_base: float, attention_minus_base: float)
                 base = attention_plus_base if weight_raw[0] == '+' else attention_minus_base
                 weight = pow(base, len(weight_raw))
             return Attention(weight=weight, children=[x for x in x[0]])
-        elif operator == '.swap':
-            return CrossAttentionControlSubstitute(target, arguments, x.as_dict())
+        # elif operator == '.swap':
+        #     return CrossAttentionControlSubstitute(target, arguments, x.as_dict())
         elif operator == '.blend':
             prompts = [Prompt(p) for p in x[0]]
             weights_raw = x[2]
@@ -554,16 +554,16 @@ def build_parser_syntax(attention_plus_base: float, attention_minus_base: float)
 
     # ok here we go. forward declare some things..
     attention = pp.Forward()
-    cross_attention_substitute = pp.Forward()
+    # cross_attention_substitute = pp.Forward()
     parenthesized_fragment = pp.Forward()
     quoted_fragment = pp.Forward()
-    lora_weight = pp.Forward()
+    # lora_weight = pp.Forward()
 
     # the types of things that can go into a fragment, consisting of syntax-full and/or strictly syntax-free components
     fragment_part_expressions = [
-        lora_weight,
+        # lora_weight,
         attention,
-        cross_attention_substitute,
+        # cross_attention_substitute,
         parenthesized_fragment,
         quoted_fragment,
         non_syntax_word
@@ -627,30 +627,30 @@ def build_parser_syntax(attention_plus_base: float, attention_minus_base: float)
     attention.set_debug(False)
 
     # cross-attention control by swapping one fragment for another
-    cross_attention_substitute << (
-        pp.Group(potential_operator_target).set_name('ca-target').set_debug(False)
-        + pp.Literal(".swap").set_name('ca-operator').set_debug(False)
-        + lparen
-        + pp.Group(fragment_excluding_commas).set_name('ca-replacement').set_debug(False)
-        + pp.Optional(comma + options).set_name('ca-options').set_debug(False)
-        + rparen
-    )
-    cross_attention_substitute.set_name('cross_attention_substitute')
-    cross_attention_substitute.set_debug(False)
-    cross_attention_substitute.set_parse_action(make_operator_object)
+    # cross_attention_substitute << (
+    #     pp.Group(potential_operator_target).set_name('ca-target').set_debug(False)
+    #     + pp.Literal(".swap").set_name('ca-operator').set_debug(False)
+    #     + lparen
+    #     + pp.Group(fragment_excluding_commas).set_name('ca-replacement').set_debug(False)
+    #     + pp.Optional(comma + options).set_name('ca-options').set_debug(False)
+    #     + rparen
+    # )
+    # cross_attention_substitute.set_name('cross_attention_substitute')
+    # cross_attention_substitute.set_debug(False)
+    # cross_attention_substitute.set_parse_action(make_operator_object)
 
-    lora_trigger_term = pp.Literal("useLora") | pp.Literal("withLora")
-    lora_weight << (lora_trigger_term + lparen
-                   + keyword # lora name
-                   + pp.Optional(comma + number).set_name('lora_weight').set_debug(False)
-                   + rparen)
-    lora_weight.set_name('lora').set_debug(False)
-    lora_weight.set_parse_action(lambda x: LoraWeight(model=x[1], weight=(x[2] if len(x) > 2 else 1)))
+    # lora_trigger_term = pp.Literal("useLora") | pp.Literal("withLora")
+    # lora_weight << (lora_trigger_term + lparen
+    #                + keyword # lora name
+    #                + pp.Optional(comma + number).set_name('lora_weight').set_debug(False)
+    #                + rparen)
+    # lora_weight.set_name('lora').set_debug(False)
+    # lora_weight.set_parse_action(lambda x: LoraWeight(model=x[1], weight=(x[2] if len(x) > 2 else 1)))
 
     # an entire self-contained prompt, which can be used in a Blend or Conjunction
     prompt = pp.ZeroOrMore(pp.MatchFirst([
-        cross_attention_substitute,
-        lora_weight,
+        # cross_attention_substitute,
+        # lora_weight,
         attention,
         quoted_fragment,
         parenthesized_fragment,
@@ -689,8 +689,9 @@ def build_parser_syntax(attention_plus_base: float, attention_minus_base: float)
     explicit_conjunction.set_parse_action(make_operator_object)
 
     # by default a prompt consists of a Conjunction with a single term
-    optional_lora_weights = pp.Optional(pp.Group(pp.OneOrMore(lora_weight)))
-    implicit_conjunction = optional_lora_weights + (blend | pp.Group(prompt)) + optional_lora_weights + pp.StringEnd()
+    # optional_lora_weights = pp.Optional(pp.Group(pp.OneOrMore(lora_weight)))
+    # implicit_conjunction = optional_lora_weights + (blend | pp.Group(prompt)) + optional_lora_weights + pp.StringEnd()
+    implicit_conjunction = (blend | pp.Group(prompt)) + pp.StringEnd()
     implicit_conjunction.set_parse_action(lambda x: Conjunction(x))
 
     conjunction = (explicit_conjunction | implicit_conjunction)
